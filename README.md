@@ -26,6 +26,8 @@ Then open the Vite URL (normally `http://localhost:5173`). The frontend proxies 
 - Rich horizontal product cards in assistant replies.
 - Intent parsing for categories, colours and brands; follow-ups like **“only Nike”** retain previous category context.
 - Local per-category preference weights from product clicks, included in each recommendation request to boost relevant categories.
+- A browser-only personalization service that stores `{ category, title, timestamp }` interactions and applies `finalScore = searchScore + personalizationScore`.
+- An explainable `recommendProducts(query, products, userHistory)` helper for client-side text ranking: title +3, category +2, description +1, then trending fallback.
 - Lightweight simulated visual search based on uploaded image metadata. The `image-search` endpoint is intentionally isolated so a CLIP/vector-search implementation can replace its intent seeding without changing the widget API.
 
 ## Architecture

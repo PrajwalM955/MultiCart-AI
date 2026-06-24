@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter
 from typing import Any
 
 import httpx
@@ -33,32 +32,38 @@ async def products() -> list[dict[str, Any]]:
 
 def infer_intent(query: str, previous: dict[str, Any] | None = None) -> dict[str, Any]:
     q = query.lower().strip()
-    intent = dict(previous or {})
     category_aliases = {
         "shoe": ["mens-shoes", "womens-shoes"], "sneaker": ["mens-shoes", "womens-shoes"],
         "smartphone": ["smartphones"], "phone": ["smartphones"], "mobile": ["smartphones"],
         "sport": ["sports-accessories"], "fitness": ["sports-accessories"], "makeup": ["beauty"],
+        "beauty": ["beauty"], "perfume": ["fragrances"], "perfumes": ["fragrances"],
         "laptop": ["laptops"], "watch": ["mens-watches", "womens-watches"], "fragrance": ["fragrances"],
         "furniture": ["furniture"], "grocery": ["groceries"], "bag": ["womens-bags", "mens-shirts"]
     }
     matches = [category for word, category in category_aliases.items() if word in q]
+    follow_up = bool(re.search(r"\b(only|just|that|those|them|similar|more|another|cheaper)\b", q))
+    # A named category begins a fresh request. Constraint-only follow-ups ("only Nike")
+    # retain the category, colour and other useful context from the previous turn.
+    intent = dict(previous or {}) if (follow_up or not matches) else {}
     if matches: intent["categories"] = [item for group in matches for item in group]
     colors = [color for color in ["black", "white", "red", "blue", "green", "brown", "pink", "gold", "silver"] if color in q]
     if colors: intent["color"] = colors[0]
     brands = re.findall(r"\b(nike|apple|samsung|adidas|puma|gucci|dell|sony|oppo|huawei)\b", q)
     if brands: intent["brand"] = brands[-1]
-    # “only Nike” deliberately retains the prior category.
     intent["last_query"] = query
     return intent
 
-def search_catalogue(catalogue: list[dict[str, Any]], intent: dict[str, Any], preferences: dict[str, int]) -> list[dict[str, Any]]:
+def product_text(product: dict[str, Any]) -> str:
+    return " ".join(str(product.get(key, "")) for key in ("title", "description", "category", "brand", "tags")).lower()
+
+def search_catalogue(catalogue: list[dict[str, Any]], intent: dict[str, Any], preferences: dict[str, int]) -> tuple[list[dict[str, Any]], str]:
     terms = intent.get("last_query", "").lower().split()
     categories = intent.get("categories", [])
     color, brand = intent.get("color"), intent.get("brand")
     pref_max = max(preferences.values(), default=0)
 
     def score(product: dict[str, Any]) -> float:
-        searchable = " ".join(str(product.get(k, "")) for k in ("title", "description", "category", "brand", "tags")).lower()
+        searchable = product_text(product)
         value = 0.0
         if product["category"] in categories: value += 12
         if color and color in searchable: value += 8
@@ -67,18 +72,37 @@ def search_catalogue(catalogue: list[dict[str, Any]], intent: dict[str, Any], pr
         if pref_max: value += 4 * preferences.get(product["category"], 0) / pref_max
         return value + float(product.get("rating", 0)) / 10
 
-    ranked = sorted(catalogue, key=score, reverse=True)
-    strong = [p for p in ranked if score(p) > 1]
-    return (strong or ranked)[:8]
+    # Layer 1: all requested constraints have an exact product match.
+    category_pool = [p for p in catalogue if not categories or p["category"] in categories]
+    constrained = category_pool
+    if color:
+        constrained = [p for p in constrained if color in product_text(p)]
+    if brand:
+        constrained = [p for p in constrained if brand in product_text(p)]
+    if constrained:
+        return sorted(constrained, key=score, reverse=True)[:8], "exact"
 
-def reply_for(intent: dict[str, Any], count: int, image: bool = False) -> str:
+    # Layer 2: keep the category request even when the catalogue has no exact
+    # colour/brand variation (e.g. "only Nike" after shoes).
+    if category_pool:
+        return sorted(category_pool, key=score, reverse=True)[:8], "similar"
+
+    # Layer 3: no known category: return high-rated, preference-boosted products.
+    return sorted(catalogue, key=score, reverse=True)[:8], "trending"
+
+def reply_for(intent: dict[str, Any], count: int, match_type: str, image: bool = False) -> str:
     details = []
     if intent.get("color"): details.append(intent["color"])
     if intent.get("brand"): details.append(intent["brand"].title())
     if intent.get("categories"): details.append(intent["categories"][0].replace("-", " "))
     description = " ".join(details) or "great matches"
-    prefix = "I looked at the visual cues in your image and found" if image else "Here are"
-    return f"{prefix} {count} {description} options. Your clicks will gently tune what I show next."
+    if image:
+        return "Showing visually similar products."
+    if match_type == "exact":
+        return f"Here are {count} {description} options. Your clicks will gently tune what I show next."
+    if match_type == "similar":
+        return f"I couldn't find an exact {description} match in this catalogue, so I picked {count} similar options in the same department."
+    return f"I couldn't find an exact match, so here are {count} trending options, lightly personalized from what you've clicked."
 
 @app.get("/api/health")
 async def health(): return {"status": "ok"}
@@ -92,8 +116,8 @@ async def get_products(limit: int = 100):
 async def recommend(request: RecommendationRequest):
     catalogue = await products()
     intent = infer_intent(request.query, request.context)
-    found = search_catalogue(catalogue, intent, request.preferences)
-    return {"reply": reply_for(intent, len(found)), "products": found, "context": intent}
+    found, match_type = search_catalogue(catalogue, intent, request.preferences)
+    return {"reply": reply_for(intent, len(found), match_type), "products": found, "context": intent, "match_type": match_type}
 
 @app.post("/api/image-search")
 async def image_search(image: UploadFile = File(...), preferences_json: str = Form("{}")):
@@ -106,5 +130,5 @@ async def image_search(image: UploadFile = File(...), preferences_json: str = Fo
     # A neutral image falls back to the user's local category affinities.
     intent = infer_intent(semantic_hint)
     catalogue = await products()
-    found = search_catalogue(catalogue, intent, preferences)
-    return {"reply": reply_for(intent, len(found), image=True), "products": found, "context": intent}
+    found, match_type = search_catalogue(catalogue, intent, preferences)
+    return {"reply": reply_for(intent, len(found), match_type, image=True), "products": found, "context": intent, "match_type": match_type}

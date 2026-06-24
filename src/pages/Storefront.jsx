@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ChatWidget from '../components/ChatWidget'
 import ProductCard from '../components/ProductCard'
 import { getProducts } from '../services/api'
-import { trackProductClick } from '../services/recommendationService'
+import { trackInteraction } from '../services/personalizationService'
 
 export default function Storefront() {
   const [products, setProducts] = useState([])
@@ -11,10 +11,32 @@ export default function Storefront() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
+  const [highlightedProductId, setHighlightedProductId] = useState(null)
 
   useEffect(() => { getProducts().then(data => setProducts(data.products)).catch(() => setError('The catalogue could not be loaded. Check that the FastAPI service is running, then retry.')).finally(() => setLoading(false)) }, [])
   const categories = useMemo(() => ['All', ...new Set(products.map(p => p.category))], [products])
   const visibleProducts = products.filter(p => (activeCategory === 'All' || p.category === activeCategory) && `${p.title} ${p.category}`.toLowerCase().includes(search.toLowerCase()))
+
+  useEffect(() => {
+    function revealRecommendedProduct(event) {
+      const product = event.detail
+      if (!product?.id) return
+      setSearch('')
+      setActiveCategory('All')
+      setHighlightedProductId(product.id)
+    }
+    window.addEventListener('multicart:view-product', revealRecommendedProduct)
+    return () => window.removeEventListener('multicart:view-product', revealRecommendedProduct)
+  }, [])
+
+  useEffect(() => {
+    if (!highlightedProductId) return
+    const timer = window.setTimeout(() => {
+      document.getElementById(`product-${highlightedProductId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 80)
+    const clearHighlight = window.setTimeout(() => setHighlightedProductId(null), 2200)
+    return () => { window.clearTimeout(timer); window.clearTimeout(clearHighlight) }
+  }, [highlightedProductId, visibleProducts])
 
   return <main className="min-h-screen overflow-x-hidden">
     <nav className="mx-auto flex max-w-7xl items-center gap-4 px-5 py-5 lg:px-8">
@@ -32,7 +54,7 @@ export default function Storefront() {
     <section id="discover" className="mx-auto max-w-7xl px-5 py-12 lg:px-8"><div className="grid gap-4 md:grid-cols-3"><Feature number="01" title="Just ask" text="Natural searches like “show black shoes” understand the intent, not just keywords."/><Feature number="02" title="Show, don’t tell" text="Speak in English, Hindi, or Arabic — or upload an image for visual discovery."/><Feature number="03" title="Learns lightly" text="Product clicks stay in this browser and gently tune the next recommendations."/></div></section>
     <section id="catalogue" className="mx-auto max-w-7xl px-5 pb-24 lg:px-8"><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="text-sm font-bold text-coral">CURATED CATALOGUE</p><h2 className="mt-1 text-3xl font-black tracking-tight">A little something for everyone.</h2></div><label className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:hidden"><Search size={18} className="text-slate-400"/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products" className="w-full bg-transparent text-sm outline-none"/></label></div>
       <div className="hide-scrollbar mt-7 flex gap-2 overflow-x-auto pb-2">{categories.map(category => <button key={category} onClick={() => setActiveCategory(category)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold capitalize transition ${activeCategory === category ? 'bg-ink text-white' : 'bg-slate-100 text-slate-600 hover:bg-sky'}`}>{category.replaceAll('-', ' ')}</button>)}</div>
-      {loading ? <div className="grid grid-cols-2 gap-4 pt-8 md:grid-cols-3 lg:grid-cols-4">{Array.from({length: 8}).map((_, i) => <div key={i} className="h-80 animate-pulse rounded-3xl bg-slate-100"/>)}</div> : error ? <div className="mt-8 rounded-3xl border border-red-100 bg-red-50 p-8 text-center"><p className="font-bold text-red-800">Catalogue unavailable</p><p className="mt-2 text-sm text-red-700">{error}</p><button onClick={() => window.location.reload()} className="mt-4 rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white">Retry</button></div> : <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{visibleProducts.map(product => <ProductCard key={product.id} product={product} onView={trackProductClick}/>)}</div>}
+      {loading ? <div className="grid grid-cols-2 gap-4 pt-8 md:grid-cols-3 lg:grid-cols-4">{Array.from({length: 8}).map((_, i) => <div key={i} className="h-80 animate-pulse rounded-3xl bg-slate-100"/>)}</div> : error ? <div className="mt-8 rounded-3xl border border-red-100 bg-red-50 p-8 text-center"><p className="font-bold text-red-800">Catalogue unavailable</p><p className="mt-2 text-sm text-red-700">{error}</p><button onClick={() => window.location.reload()} className="mt-4 rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white">Retry</button></div> : <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{visibleProducts.map(product => <ProductCard key={product.id} product={product} anchorId={`product-${product.id}`} highlighted={highlightedProductId === product.id} onView={trackInteraction}/>)}</div>}
       {!loading && !error && !visibleProducts.length && <p className="py-20 text-center text-slate-500">No products found. Try a different search or let MultiCart AI explore for you.</p>}
     </section>
     <footer id="about" className="border-t border-slate-100 px-5 py-8 text-center text-sm text-slate-500">MultiCart AI SDK prototype · Built for delightful product discovery</footer>

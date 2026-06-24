@@ -1,7 +1,7 @@
 import { ArrowUp, ChevronDown, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { getRecommendations, searchFromImage } from '../services/api'
-import { getPreferences, trackProductClick } from '../services/recommendationService'
+import { getUserPreferences, trackInteraction } from '../services/personalizationService'
 import ImageUploader from './ImageUploader'
 import MessageBubble from './MessageBubble'
 import VoiceInput from './VoiceInput'
@@ -13,6 +13,7 @@ export default function ChatWindow({ onClose }) {
   const [input, setInput] = useState('')
   const [image, setImage] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState('Voice ready')
   const context = useRef({})
   const scrollRef = useRef()
 
@@ -27,9 +28,10 @@ export default function ChatWindow({ onClose }) {
     setLoading(true)
     try {
       const result = image
-        ? await searchFromImage(image, getPreferences())
-        : await getRecommendations({ query, context: context.current, preferences: getPreferences() })
+        ? await searchFromImage(image, getUserPreferences())
+        : await getRecommendations({ query, context: context.current, preferences: getUserPreferences() })
       context.current = result.context || context.current
+      result.products?.forEach(trackInteraction)
       setMessages(current => [...current, { role: 'assistant', text: result.reply, products: result.products }])
     } catch {
       setMessages(current => [...current, { role: 'assistant', text: 'I hit a small snag reaching the catalogue. Please try that again in a moment.' }])
@@ -40,7 +42,8 @@ export default function ChatWindow({ onClose }) {
   }
 
   function viewProduct(product) {
-    trackProductClick(product)
+    trackInteraction(product)
+    window.dispatchEvent(new CustomEvent('multicart:view-product', { detail: product }))
     setMessages(current => [...current, { role: 'assistant', text: `Great pick. I’ve noted your interest in ${product.category.replaceAll('-', ' ')} so future suggestions can get smarter.` }])
   }
 
@@ -56,11 +59,11 @@ export default function ChatWindow({ onClose }) {
     <div className="border-t border-slate-100 bg-white p-3">
       <div className="flex items-center rounded-2xl bg-slate-100 px-1.5 py-1">
         <ImageUploader file={image} onChange={setImage} disabled={loading} />
-        <VoiceInput onTranscript={transcript => setInput(current => current ? `${current} ${transcript}` : transcript)} />
+        <VoiceInput onTranscript={setInput} onStatusChange={setVoiceStatus} />
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder={image ? 'Ask about this image…' : 'Ask for anything…'} className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400" />
         <button onClick={send} disabled={loading || (!input.trim() && !image)} className="grid h-9 w-9 place-items-center rounded-xl bg-coral text-white transition hover:scale-105 disabled:opacity-40"><ArrowUp size={17} strokeWidth={3} /></button>
       </div>
-      <p className="pt-2 text-center text-[10px] text-slate-400">Voice · image · conversation-aware recommendations</p>
+      <p aria-live="polite" className="truncate pt-2 text-center text-[10px] text-slate-400">{voiceStatus} · image · conversation-aware recommendations</p>
     </div>
   </section>
 }
