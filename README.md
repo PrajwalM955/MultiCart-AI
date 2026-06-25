@@ -1,4 +1,9 @@
 # EazyCart AI – Multimodal Shopping Assistant
+![React](https://img.shields.io/badge/Frontend-React-blue)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green)
+![Python](https://img.shields.io/badge/Python-3.11-yellow)
+![Vercel](https://img.shields.io/badge/Frontend-Vercel-black)
+![Render](https://img.shields.io/badge/Backend-Render-purple)
 
 EazyCart AI is a full-stack AI-powered shopping assistant prototype designed to enhance online product discovery through natural conversations, voice interaction, and visual search.
 
