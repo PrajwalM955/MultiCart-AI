@@ -4,6 +4,14 @@ EazyCart AI is a full-stack AI-powered shopping assistant prototype designed to 
 
 The project demonstrates how an intelligent shopping copilot can be integrated into e-commerce platforms to provide personalized and context-aware recommendations.
 
+## Deployment
+
+Live Demo:
+https://multi-cart-1p9l7jsgp-prajwal955.vercel.app
+
+Backend API:
+https://multicart-backend-anjx.onrender.com
+
 ## Features
 
 * Conversational product discovery using natural language
@@ -80,14 +88,6 @@ The recommendation engine analyzes:
 * Colors
 * User preferences
 * Previous interactions
-
-## Deployment
-
-Live Demo:
-https://multi-cart-1p9l7jsgp-prajwal955.vercel.app
-
-Backend API:
-https://multicart-backend-anjx.onrender.com
 
 ## Future Enhancements
 
