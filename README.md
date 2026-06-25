@@ -18,6 +18,17 @@ https://multi-cart-1p9l7jsgp-prajwal955.vercel.app
 **Backend API:**  
 https://multicart-backend-anjx.onrender.com
 
+## Application Preview
+
+| Home Page | Conversational Search |
+|------------|------------|
+| ![](screenshots/home-page.png) | ![](screenshots/chat-demo.png) |
+
+| Voice Search | Image Search |
+|------------|------------|
+| ![](screenshots/voice-search.png) | ![](screenshots/image-search.png) |
+
+
 ## Project Highlights
 
 - Conversational product discovery using natural language
