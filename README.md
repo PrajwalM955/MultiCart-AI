@@ -6,7 +6,9 @@
 ![Vercel](https://img.shields.io/badge/Frontend-Vercel-black)
 ![Render](https://img.shields.io/badge/Backend-Render-purple)
 
-EazyCart AI is a full-stack AI-powered shopping assistant prototype designed to improve product discovery through conversational search, voice interaction, and image-based recommendations.
+EazyCart AI is a full-stack AI-powered shopping assistant prototype designed to enhance online product discovery through conversational search, multilingual voice interaction, and image-based recommendations.
+
+The system demonstrates how AI can be integrated into modern e-commerce platforms to deliver personalized, context-aware, and explainable shopping experiences.
 
 The prototype demonstrates how an intelligent shopping copilot can be integrated into modern e-commerce platforms to deliver personalized and context-aware shopping experiences.
 
@@ -31,14 +33,10 @@ https://multicart-backend-anjx.onrender.com
 
 ## Project Highlights
 
-- Conversational product discovery using natural language
-- Voice-enabled product search
-- Image-based visual product discovery
-- Context-aware recommendation engine
-- Session-based preference learning
-- Personalized product ranking
-- Explainable recommendation responses
-- Responsive across desktop and mobile devices
+- Built and deployed a full-stack multimodal shopping assistant prototype
+- Integrated conversational, voice, and image-based product discovery workflows
+- Implemented context-aware recommendation logic using FastAPI and React
+- Successfully deployed frontend and backend on Vercel and Render
 
 ## Tech Stack
 
