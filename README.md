@@ -1,39 +1,107 @@
-# MultiCart AI SDK prototype
+# EazyCart AI – Multimodal Shopping Assistant
 
-An e-commerce storefront demonstrating an embeddable multimodal shopping assistant. It uses DummyJSON for catalogue data, FastAPI for recommendation orchestration, and browser `localStorage` to keep category preferences private to the shopper's browser.
+EazyCart AI is a full-stack AI-powered shopping assistant prototype designed to enhance online product discovery through natural conversations, voice interaction, and visual search.
 
-## Run it locally
+The project demonstrates how an intelligent shopping copilot can be integrated into e-commerce platforms to provide personalized and context-aware recommendations.
 
-Open two terminals from this repository:
+## Features
 
-```powershell
-# terminal 1 — API
-python -m venv backend/.venv
-backend/.venv/Scripts/python -m pip install -r backend/requirements.txt
-backend/.venv/Scripts/python -m uvicorn main:app --app-dir backend --reload
+* Conversational product discovery using natural language
+* Voice-enabled product search
+* Image-based product recommendation
+* Context-aware recommendation engine
+* Session-based preference learning
+* Personalized product ranking
+* Responsive UI for desktop and mobile devices
+* Explainable recommendation responses
 
-# terminal 2 — storefront
-npm.cmd install
-npm.cmd run dev
-```
+## Tech Stack
 
-Then open the Vite URL (normally `http://localhost:5173`). The frontend proxies `/api` to FastAPI during development.
+### Frontend
 
-## What the prototype demonstrates
+* React
+* Vite
+* Tailwind CSS
 
-- A responsive catalogue sourced from DummyJSON Products.
-- A fixed, embeddable-style React chat widget with text, image and browser speech input (English India, Hindi India, Arabic Saudi Arabia).
-- Rich horizontal product cards in assistant replies.
-- Intent parsing for categories, colours and brands; follow-ups like **“only Nike”** retain previous category context.
-- Local per-category preference weights from product clicks, included in each recommendation request to boost relevant categories.
-- A browser-only personalization service that stores `{ category, title, timestamp }` interactions and applies `finalScore = searchScore + personalizationScore`.
-- An explainable `recommendProducts(query, products, userHistory)` helper for client-side text ranking: title +3, category +2, description +1, then trending fallback.
-- Lightweight simulated visual search based on uploaded image metadata. The `image-search` endpoint is intentionally isolated so a CLIP/vector-search implementation can replace its intent seeding without changing the widget API.
+### Backend
+
+* FastAPI
+* Python
+
+### Deployment
+
+* Vercel (Frontend)
+* Render (Backend)
+
+### External APIs
+
+* DummyJSON Product API
 
 ## Architecture
 
-```text
-React storefront + ChatWidget ── /api ──> FastAPI recommendation service ──> DummyJSON
-             │                          ↑
-             └── localStorage preferences┘
-```
+User Input (Text / Voice / Image)
+↓
+React Frontend
+↓
+FastAPI Recommendation Engine
+↓
+Intent Analysis & Preference Learning
+↓
+Product Ranking
+↓
+Personalized Recommendations
+
+## Key Functionalities
+
+### Text Search
+
+Users can search products conversationally using natural language queries.
+
+Example:
+
+* "Show black shoes"
+* "Only Nike products"
+* "Suggest laptops"
+
+### Voice Search
+
+Users can interact with the shopping assistant through voice commands.
+
+### Visual Search
+
+Users can upload product images to discover visually similar products.
+
+### Recommendation Engine
+
+The recommendation engine analyzes:
+
+* Product categories
+* Brands
+* Colors
+* User preferences
+* Previous interactions
+
+## Deployment
+
+Live Demo:
+https://multi-cart-1p9l7jsgp-prajwal955.vercel.app
+
+Backend API:
+https://multicart-backend-anjx.onrender.com
+
+## Future Enhancements
+
+* CLIP-based image embeddings
+* LLM-powered conversational assistant
+* Real e-commerce integration
+* User authentication
+* Wishlist and cart personalization
+* Multilingual recommendation support
+* Analytics dashboard
+
+## Author
+
+Prajwal M
+
+GitHub:
+https://github.com/PrajwalM955
